@@ -48,7 +48,6 @@ import com.vaadin.ui.ComboBox;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.dom4j.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +113,8 @@ public class ServerLogWindow extends AbstractWindow {
     private Metadata metadata;
 
     protected JmxInstance localJmxInstance;
+
+    protected static final String LAST_SELECTED_LOG_FILE_NAME = "lastSelectedLogFileName";
 
     @Override
     public void init(Map<String, Object> params) {
@@ -420,9 +421,9 @@ public class ServerLogWindow extends AbstractWindow {
                     openWindow("serverLogDownloadOptionsDialog",
                             OpenType.DIALOG,
                             ParamsMap.of("logFileName", fileName,
-                                    "connection", selectedConnection,
-                                    "logFileSize", size,
-                                    "remoteContextList", availableContexts));
+                                         "connection", selectedConnection,
+                                         "logFileSize", size,
+                                         "remoteContextList", availableContexts));
                 }
             } catch (RuntimeException | LogControlException e) {
                 showNotification(getMessage("exception.logControl"), NotificationType.ERROR);
@@ -531,20 +532,29 @@ public class ServerLogWindow extends AbstractWindow {
 
     }
 
+    @SuppressWarnings("unchecked")
+    protected List<String> getLogFileNamesList() {
+        List<String> logFileNamesList = logFileNameField.getOptionsList();
+        return logFileNamesList;
+    }
+
     @Override
     public void applySettings(Settings settings) {
         super.applySettings(settings);
-        if (settings.get().attribute("last") != null) {
-            String lastFileName = settings.get().attribute("last").getText();
-            logFileNameField.setValue(lastFileName);
-            showLogTail();
+        if (settings.get().attribute(LAST_SELECTED_LOG_FILE_NAME) != null) {
+            String lastFileName = settings.get().attribute(LAST_SELECTED_LOG_FILE_NAME).getText();
+            List<String> logFileNamesList = getLogFileNamesList();
+            if (logFileNamesList.contains(lastFileName)) {
+                logFileNameField.setValue(lastFileName);
+                showLogTail();
+            }
         }
     }
 
     @Override
     public void saveSettings() {
         String lastFileName = logFileNameField.getValue();
-        getSettings().get().addAttribute("last", lastFileName);
+        getSettings().get().addAttribute(LAST_SELECTED_LOG_FILE_NAME, lastFileName);
         super.saveSettings();
     }
 }
