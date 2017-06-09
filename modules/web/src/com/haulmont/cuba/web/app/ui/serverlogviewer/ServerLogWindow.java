@@ -32,6 +32,7 @@ import com.haulmont.cuba.gui.components.*;
 import com.haulmont.cuba.gui.components.Timer;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
 import com.haulmont.cuba.gui.export.ExportDisplay;
+import com.haulmont.cuba.gui.settings.Settings;
 import com.haulmont.cuba.security.global.UserSession;
 import com.haulmont.cuba.web.app.ui.jmxinstance.edit.JmxInstanceEditor;
 import com.haulmont.cuba.web.export.LogDataProvider;
@@ -47,6 +48,7 @@ import com.vaadin.ui.ComboBox;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.dom4j.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -416,11 +418,11 @@ public class ServerLogWindow extends AbstractWindow {
                     exportDisplay.show(dataProvider, fileName + ".zip");
                 } else {
                     openWindow("serverLogDownloadOptionsDialog",
-                               OpenType.DIALOG,
-                               ParamsMap.of("logFileName", fileName,
-                                            "connection", selectedConnection,
-                                            "logFileSize", size,
-                                            "remoteContextList", availableContexts));
+                            OpenType.DIALOG,
+                            ParamsMap.of("logFileName", fileName,
+                                    "connection", selectedConnection,
+                                    "logFileSize", size,
+                                    "remoteContextList", availableContexts));
                 }
             } catch (RuntimeException | LogControlException e) {
                 showNotification(getMessage("exception.logControl"), NotificationType.ERROR);
@@ -526,5 +528,23 @@ public class ServerLogWindow extends AbstractWindow {
         }
 
         logTailLabel.setValue("");
+
+    }
+
+    @Override
+    public void applySettings(Settings settings) {
+        super.applySettings(settings);
+        if (settings.get().attribute("last") != null) {
+            String lastFileName = settings.get().attribute("last").getText();
+            logFileNameField.setValue(lastFileName);
+            showLogTail();
+        }
+    }
+
+    @Override
+    public void saveSettings() {
+        String lastFileName = logFileNameField.getValue();
+        getSettings().get().addAttribute("last", lastFileName);
+        super.saveSettings();
     }
 }
