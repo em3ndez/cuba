@@ -24,7 +24,8 @@ import com.haulmont.cuba.gui.components.Action;
 import com.haulmont.cuba.gui.components.ListComponent;
 import com.haulmont.cuba.security.entity.ConstraintOperationType;
 
-public abstract class ItemTrackingAction extends BaseAction implements Action.HasSecurityConstraint {
+public class ItemTrackingAction<T extends ItemTrackingAction> extends BaseAction<T>
+        implements Action.HasSecurityConstraint {
 
     protected ConstraintOperationType constraintOperationType;
     protected String constraintCode;

@@ -91,14 +91,12 @@ public class RoleBrowser extends AbstractLookup {
     public void init(Map<String, Object> params) {
         super.init(params);
 
-        Action copyRoles = new ItemTrackingAction("copy") {
-            @Override
-            public void actionPerform(Component component) {
-                userManagementService.copyRole(rolesTable.getSingleSelected().getId());
-                rolesDs.refresh();
-            }
-        };
-        copyRoles.setCaption(getMessage("actions.Copy"));
+        Action copyRoles = new ItemTrackingAction("copy")
+                .withCaption(getMessage("actions.Copy"))
+                .withHandler(event -> {
+                    userManagementService.copyRole(rolesTable.getSingleSelected().getId());
+                    rolesDs.refresh();
+                });
 
         boolean hasPermissionsToCreateRole = security.isEntityOpPermitted(Role.class, EntityOp.CREATE);
         copyRoles.setEnabled(hasPermissionsToCreateRole);
@@ -113,17 +111,22 @@ public class RoleBrowser extends AbstractLookup {
                     return;
                 }
 
-                final Role role = (Role) target.getSingleSelected();
+                Role role = (Role) target.getSingleSelected();
                 Map<String, Object> params = new HashMap<>();
                 WindowParams.MULTI_SELECT.set(params, true);
                 openLookup("sec$User.lookup", items -> {
-                    if (items == null) return;
+                    if (items == null)
+                        return;
+
                     List<Entity> toCommit = new ArrayList<>();
                     for (Object item : items) {
                         User user = (User) item;
-                        LoadContext<UserRole> ctx = new LoadContext<>(UserRole.class).setView("user.edit");
-                        LoadContext.Query query = ctx.setQueryString("select ur from sec$UserRole ur where ur.user.id = :user");
-                        query.setParameter("user", user);
+                        LoadContext<UserRole> ctx = LoadContext.create(UserRole.class)
+                                .setView("user.edit")
+                                .setQuery(new LoadContext.Query("select ur from sec$UserRole ur where ur.user.id = :user")
+                                        .setParameter("user", user)
+                                );
+
                         List<UserRole> userRoles = dataManager.loadList(ctx);
 
                         boolean roleExist = false;
@@ -145,7 +148,7 @@ public class RoleBrowser extends AbstractLookup {
                         dataManager.commit(new CommitContext(toCommit));
                     }
 
-                    showNotification(getMessage("rolesAssigned.msg"), NotificationType.HUMANIZED);
+                    showNotification(getMessage("rolesAssigned.msg"));
                 }, OpenType.THIS_TAB, params);
             }
         };

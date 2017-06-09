@@ -18,13 +18,12 @@
 package com.haulmont.cuba.gui.components.actions;
 
 import com.haulmont.bali.util.Preconditions;
-import com.haulmont.cuba.gui.components.AbstractAction;
-import com.haulmont.cuba.gui.components.Action;
-import com.haulmont.cuba.gui.components.ListComponent;
+import com.haulmont.cuba.gui.components.*;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Action that can change its enabled and visible properties depending on the user permissions and current context.
@@ -44,7 +43,7 @@ import java.util.List;
  * <p> Descendants may override {@link #isPermitted()} and {@link #isApplicable()} methods to define conditions in which
  * action will be enabled.
  */
-public abstract class BaseAction extends AbstractAction implements Action.HasTarget, Action.UiPermissionAware {
+public class BaseAction<T extends BaseAction> extends AbstractAction implements Action.HasTarget, Action.UiPermissionAware {
 
     private boolean enabledByUiPermissions = true;
     private boolean visibleByUiPermissions = true;
@@ -56,11 +55,13 @@ public abstract class BaseAction extends AbstractAction implements Action.HasTar
 
     protected ListComponent target;
 
-    protected BaseAction(String id) {
+    protected Consumer<ActionPerformedEvent> actionPerformHandler;
+
+    public BaseAction(String id) {
         this(id, null);
     }
 
-    protected BaseAction(String id, @Nullable String shortcut) {
+    public BaseAction(String id, @Nullable String shortcut) {
         super(id, shortcut);
     }
 
@@ -206,5 +207,46 @@ public abstract class BaseAction extends AbstractAction implements Action.HasTar
      */
     public interface EnabledRule {
         boolean isActionEnabled();
+    }
+
+    @Override
+    public void actionPerform(Component component) {
+        if (actionPerformHandler != null) {
+            actionPerformHandler.accept(new ActionPerformedEvent(this, component));
+        }
+    }
+
+    // todo JavaDoc!
+
+    @SuppressWarnings("unchecked")
+    public T withCaption(String caption) {
+        this.caption = caption;
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T withDescription(String description) {
+        this.description = description;
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T withIcon(String icon) {
+        this.icon = icon;
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T withShortcut(String shortcut) {
+        if (shortcut != null) {
+            this.shortcut = KeyCombination.create(shortcut);
+        }
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public T withHandler(Consumer<ActionPerformedEvent> handler) {
+        this.actionPerformHandler = handler;
+        return (T) this;
     }
 }

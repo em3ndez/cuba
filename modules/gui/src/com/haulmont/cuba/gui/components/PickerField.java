@@ -38,10 +38,13 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Generic UI component designed to select and display an entity instance. Consists of the text field and the set of buttons
@@ -155,7 +158,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
         public abstract Action createAction(PickerField pickerField);
     }
 
-    abstract class StandardAction extends BaseAction {
+    abstract class StandardAction<T extends StandardAction> extends BaseAction<T> {
 
         protected PickerField pickerField;
 
@@ -201,7 +204,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
      */
     @org.springframework.stereotype.Component("cuba_LookupAction")
     @Scope("prototype")
-    class LookupAction extends StandardAction {
+    class LookupAction extends StandardAction<LookupAction> {
 
         public static final String NAME = ActionType.LOOKUP.getId();
 
@@ -209,6 +212,8 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
         protected OpenType lookupScreenOpenType = OpenType.THIS_TAB;
         protected DialogParams lookupScreenDialogParams;
         protected Map<String, Object> lookupScreenParams;
+
+        protected Supplier<Map<String, Object>> lookupScreenParamsSupplier;
 
         protected AfterLookupCloseHandler afterLookupCloseHandler;
         protected AfterLookupSelectionHandler afterLookupSelectionHandler;
@@ -259,6 +264,11 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
          */
         public void setLookupScreenOpenType(OpenType lookupScreenOpenType) {
             this.lookupScreenOpenType = lookupScreenOpenType;
+        }
+
+        public LookupAction withLookupScreenOpenType(OpenType lookupScreenOpenType) {
+            this.lookupScreenOpenType = lookupScreenOpenType;
+            return this;
         }
 
         @Deprecated
@@ -317,7 +327,8 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
 
                 OpenType openType = getLookupScreenOpenType();
                 DialogParams dialogParams = getLookupScreenDialogParams();
-                Map<String, Object> screenParams = getLookupScreenParams();
+
+                Map<String, Object> screenParams = prepareScreenParams();
 
                 if (openType.getOpenMode() == OpenMode.DIALOG && dialogParams != null) {
                     wm.getDialogParams().copyFrom(dialogParams);
@@ -327,7 +338,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
                         windowConfig.getWindowInfo(windowAlias),
                         this::handleLookupWindowSelection,
                         openType,
-                        screenParams != null ? screenParams : Collections.emptyMap()
+                        screenParams
                 );
                 lookupWindow.addCloseListener(actionId -> {
                     // if value is selected then options datasource is refreshed in select handler
@@ -351,6 +362,28 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
                 });
                 afterLookupWindowOpened(lookupWindow);
             }
+        }
+
+        @Nonnull
+        protected Map<String, Object> prepareScreenParams() {
+            Map<String, Object> resultParams = Collections.emptyMap();
+
+            Map<String, Object> explicitParams = getLookupScreenParams();
+            if (explicitParams != null && !explicitParams.isEmpty()) {
+                resultParams = explicitParams;
+            }
+            if (lookupScreenParamsSupplier != null) {
+                Map<String, Object> params = lookupScreenParamsSupplier.get();
+                if (params != null && !params.isEmpty()) {
+                    if (resultParams.isEmpty()) {
+                        resultParams = params;
+                    } else {
+                        resultParams = new HashMap<>(resultParams);
+                        resultParams.putAll(params);
+                    }
+                }
+            }
+            return resultParams;
         }
 
         protected void handleLookupWindowSelection(Collection items) {
@@ -421,6 +454,19 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
          */
         public void afterCloseLookup(String actionId) {
         }
+
+        public Supplier<Map<String, Object>> getLookupScreenParamsSupplier() {
+            return lookupScreenParamsSupplier;
+        }
+
+        public void setLookupScreenParamsSupplier(Supplier<Map<String, Object>> supplier) {
+            this.lookupScreenParamsSupplier = supplier;
+        }
+
+        public LookupAction withLookupScreenParamsSupplier(Supplier<Map<String, Object>> supplier) {
+            this.lookupScreenParamsSupplier = supplier;
+            return this;
+        }
     }
 
     /**
@@ -435,7 +481,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
      */
     @org.springframework.stereotype.Component("cuba_ClearAction")
     @Scope("prototype")
-    class ClearAction extends StandardAction {
+    class ClearAction extends StandardAction<ClearAction> {
 
         public static final String NAME = ActionType.CLEAR.getId();
 
@@ -503,7 +549,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
      */
     @org.springframework.stereotype.Component("cuba_OpenAction")
     @Scope("prototype")
-    class OpenAction extends StandardAction {
+    class OpenAction extends StandardAction<OpenAction> {
 
         public static final String NAME = ActionType.OPEN.getId();
 
@@ -511,6 +557,8 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
         protected OpenType editScreenOpenType = OpenType.THIS_TAB;
         protected DialogParams editScreenDialogParams;
         protected Map<String, Object> editScreenParams;
+
+        protected Supplier<Map<String, Object>> editScreenParamsSupplier;
 
         protected WindowConfig windowConfig = AppBeans.get(WindowConfig.class);
 
@@ -583,6 +631,19 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
             this.editScreenParams = editScreenParams;
         }
 
+        public Supplier<Map<String, Object>> getEditScreenParamsSupplier() {
+            return editScreenParamsSupplier;
+        }
+
+        public void setEditScreenParamsSupplier(Supplier<Map<String, Object>> editScreenParamsSupplier) {
+            this.editScreenParamsSupplier = editScreenParamsSupplier;
+        }
+
+        public OpenAction withEditScreenParamsSupplier(Supplier<Map<String, Object>> editScreenParamsSupplier) {
+            this.editScreenParamsSupplier = editScreenParamsSupplier;
+            return this;
+        }
+
         @Override
         public void actionPerform(Component component) {
             boolean composition = pickerField.getMetaPropertyPath() != null
@@ -605,7 +666,8 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
 
             OpenType openType = getEditScreenOpenType();
             DialogParams dialogParams = getEditScreenDialogParams();
-            Map<String, Object> screenParams = getEditScreenParams();
+
+            Map<String, Object> screenParams = prepareScreenParams();
 
             if (openType.getOpenMode() == OpenMode.DIALOG && dialogParams != null) {
                 wm.getDialogParams().copyFrom(dialogParams);
@@ -631,7 +693,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
                     windowConfig.getWindowInfo(windowAlias),
                     entity,
                     openType,
-                    screenParams != null ? screenParams : Collections.emptyMap(),
+                    screenParams,
                     getPropertyDatasource()
             );
             editor.addCloseListener(actionId -> {
@@ -645,6 +707,28 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
 
                 afterWindowClosed(editor);
             });
+        }
+
+        @Nonnull
+        protected Map<String, Object> prepareScreenParams() {
+            Map<String, Object> resultParams = Collections.emptyMap();
+
+            Map<String, Object> explicitParams = getEditScreenParams();
+            if (explicitParams != null && !explicitParams.isEmpty()) {
+                resultParams = explicitParams;
+            }
+            if (editScreenParamsSupplier != null) {
+                Map<String, Object> params = editScreenParamsSupplier.get();
+                if (params != null && !params.isEmpty()) {
+                    if (resultParams.isEmpty()) {
+                        resultParams = params;
+                    } else {
+                        resultParams = new HashMap<>(resultParams);
+                        resultParams.putAll(params);
+                    }
+                }
+            }
+            return resultParams;
         }
 
         protected Entity getEntity() {

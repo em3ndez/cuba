@@ -20,9 +20,8 @@ package com.haulmont.cuba.web.app.ui.serverlogviewer;
 import ch.qos.logback.classic.Level;
 import com.haulmont.bali.util.ParamsMap;
 import com.haulmont.cuba.core.entity.JmxInstance;
-import com.haulmont.cuba.core.global.AppBeans;
 import com.haulmont.cuba.core.global.Metadata;
-import com.haulmont.cuba.core.global.UserSessionSource;
+import com.haulmont.cuba.core.global.Security;
 import com.haulmont.cuba.core.sys.logging.LogArchiver;
 import com.haulmont.cuba.core.sys.logging.LogControlException;
 import com.haulmont.cuba.core.sys.logging.LoggingHelper;
@@ -30,19 +29,17 @@ import com.haulmont.cuba.gui.AppConfig;
 import com.haulmont.cuba.gui.WindowManager.OpenType;
 import com.haulmont.cuba.gui.components.*;
 import com.haulmont.cuba.gui.components.Timer;
+import com.haulmont.cuba.gui.components.actions.BaseAction;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
 import com.haulmont.cuba.gui.export.ExportDisplay;
-import com.haulmont.cuba.security.global.UserSession;
 import com.haulmont.cuba.web.app.ui.jmxinstance.edit.JmxInstanceEditor;
 import com.haulmont.cuba.web.export.LogDataProvider;
-import com.haulmont.cuba.web.gui.components.WebComponentsHelper;
 import com.haulmont.cuba.web.jmx.JmxControlAPI;
 import com.haulmont.cuba.web.jmx.JmxControlException;
 import com.haulmont.cuba.web.jmx.JmxRemoteLoggingAPI;
 import com.haulmont.cuba.web.toolkit.ui.CubaScrollBoxLayout;
 import com.vaadin.event.ShortcutAction;
 import com.vaadin.event.ShortcutListener;
-import com.vaadin.shared.ui.label.ContentMode;
 import com.vaadin.ui.ComboBox;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
@@ -109,7 +106,10 @@ public class ServerLogWindow extends AbstractWindow {
     protected Timer updateLogTailTimer;
 
     @Inject
-    private Metadata metadata;
+    protected Metadata metadata;
+
+    @Inject
+    protected Security security;
 
     protected JmxInstance localJmxInstance;
 
@@ -152,30 +152,22 @@ public class ServerLogWindow extends AbstractWindow {
             }
         });
 
-        jmxConnectionField.addAction(new AbstractAction("actions.Add") {
-            @Override
-            public void actionPerform(Component component) {
-                JmxInstanceEditor instanceEditor = (JmxInstanceEditor) openEditor("sys$JmxInstance.edit",
-                        metadata.create(JmxInstance.class), OpenType.DIALOG);
-                instanceEditor.addCloseListener(actionId -> {
-                    if (COMMIT_ACTION_ID.equals(actionId)) {
-                        jmxInstancesDs.refresh();
-                        jmxConnectionField.setValue(instanceEditor.getItem());
-                    }
-                });
-            }
+        jmxConnectionField.addAction(new BaseAction<>("actions.Add")
+                .withIcon("icons/plus-btn.png")
+                .withHandler(event -> {
+                    JmxInstanceEditor instanceEditor = (JmxInstanceEditor) openEditor(
+                            metadata.create(JmxInstance.class), OpenType.DIALOG);
+                    instanceEditor.addCloseListener(actionId -> {
+                        if (COMMIT_ACTION_ID.equals(actionId)) {
+                            jmxInstancesDs.refresh();
+                            jmxConnectionField.setValue(instanceEditor.getItem());
+                        }
+                    });
+                }));
 
-            @Override
-            public String getIcon() {
-                return "icons/plus-btn.png";
-            }
-        });
-
-        com.vaadin.ui.Label vlogTailLabel = (com.vaadin.ui.Label) WebComponentsHelper.unwrap(logTailLabel);
-
-        vlogTailLabel.setSizeUndefined();
-        vlogTailLabel.setContentMode(ContentMode.HTML);
-        vlogTailLabel.setStyleName("c-log-content");
+        logTailLabel.setSizeAuto();
+        logTailLabel.setHtmlEnabled(true);
+        logTailLabel.setStyleName("c-log-content");
 
         loggerLevelField.setOptionsList(LoggingHelper.getLevels());
         appenderLevelField.setOptionsList(LoggingHelper.getLevels());
@@ -192,11 +184,9 @@ public class ServerLogWindow extends AbstractWindow {
             }
         });
 
-        UserSessionSource sessionSource = AppBeans.get(UserSessionSource.NAME);
-        UserSession userSession = sessionSource.getUserSession();
-        downloadButton.setEnabled(userSession.isSpecificPermitted("cuba.gui.administration.downloadlogs"));
+        downloadButton.setEnabled(security.isSpecificPermitted("cuba.gui.administration.downloadlogs"));
 
-        ComboBox comboBox = (ComboBox) WebComponentsHelper.unwrap(logFileNameField);
+        ComboBox comboBox = logFileNameField.unwrap(ComboBox.class);
         comboBox.addShortcutListener(new ShortcutListener("", ShortcutAction.KeyCode.D,
                 new int[]{ShortcutAction.ModifierKey.CTRL, ShortcutAction.ModifierKey.SHIFT}) {
             @Override
@@ -237,8 +227,7 @@ public class ServerLogWindow extends AbstractWindow {
                     showNotification(getMessage("exception.logControl"), NotificationType.ERROR);
                 }
 
-                showNotification(String.format(getMessage("logger.setMessage"), loggerName, level.toString()),
-                        NotificationType.HUMANIZED);
+                showNotification(formatMessage("logger.setMessage", loggerName, level.toString()));
 
                 refreshLoggers();
             }
@@ -307,7 +296,7 @@ public class ServerLogWindow extends AbstractWindow {
     }
 
     public void getLoggerLevel() {
-        if (StringUtils.isNotEmpty(loggerNameField.<String>getValue())) {
+        if (StringUtils.isNotEmpty(loggerNameField.getValue())) {
             String loggerName = loggerNameField.getValue();
             String level;
 
@@ -351,7 +340,7 @@ public class ServerLogWindow extends AbstractWindow {
     }
 
     public void getAppenderLevel() {
-        if (StringUtils.isNotEmpty(appenderNameField.<String>getValue())) {
+        if (StringUtils.isNotEmpty(appenderNameField.getValue())) {
             String appenderName = appenderNameField.getValue();
             String threshold;
 
@@ -373,7 +362,7 @@ public class ServerLogWindow extends AbstractWindow {
     }
 
     public void setAppenderLevel() {
-        if (StringUtils.isNotEmpty(appenderNameField.<String>getValue())) {
+        if (StringUtils.isNotEmpty(appenderNameField.getValue())) {
             if (appenderLevelField.getValue() != null) {
                 String appenderName = appenderNameField.getValue();
                 Level threshold = appenderLevelField.getValue();
@@ -436,17 +425,16 @@ public class ServerLogWindow extends AbstractWindow {
     }
 
     public void openLoggerControlDialog() {
-        Map<String, Object> params = new HashMap<>();
-        final Map<String, Level> loggersMap = new HashMap<>();
+        Map<String, Level> loggersMap = new HashMap<>();
         Map<String, String> loggersLevels = jmxRemoteLoggingAPI.getLoggersLevels(getSelectedConnection());
 
         for (Map.Entry<String, String> log : loggersLevels.entrySet()) {
             loggersMap.put(log.getKey(), LoggingHelper.getLevelFromString(log.getValue()));
         }
 
-        params.put("loggersMap", loggersMap);
+        ControlLoggerWindow controlLogger = (ControlLoggerWindow) openWindow("serverLogLoggerControlDialog",
+                OpenType.DIALOG, ParamsMap.of("loggersMap", loggersMap));
 
-        ControlLoggerWindow controlLogger = (ControlLoggerWindow) openWindow("serverLogLoggerControlDialog", OpenType.DIALOG, params);
         controlLogger.addCloseListener(actionId -> {
             if (COMMIT_ACTION_ID.equals(actionId)) {
                 Map<String, Level> levels = controlLogger.getLevels();

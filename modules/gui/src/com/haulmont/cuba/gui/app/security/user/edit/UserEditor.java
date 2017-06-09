@@ -26,6 +26,7 @@ import com.haulmont.cuba.gui.WindowParam;
 import com.haulmont.cuba.gui.WindowParams;
 import com.haulmont.cuba.gui.app.security.user.NameBuilderListener;
 import com.haulmont.cuba.gui.components.*;
+import com.haulmont.cuba.gui.components.PickerField.LookupAction;
 import com.haulmont.cuba.gui.components.actions.ItemTrackingAction;
 import com.haulmont.cuba.gui.components.actions.RemoveAction;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
@@ -41,7 +42,6 @@ import com.haulmont.cuba.security.global.UserSession;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.util.*;
 
@@ -305,19 +305,14 @@ public class UserEditor extends AbstractEditor<User> {
         pickerField.setDatasource(groupFc.getTargetDatasource(), groupFc.getProperty());
         pickerField.setRequired(true);
         pickerField.setRequiredMessage(getMessage("groupMsg"));
-
-        PickerField.LookupAction action = new PickerField.LookupAction(pickerField) {
-            @Nullable
-            @Override
-            public Map<String, Object> getLookupScreenParams() {
-                if (getItem().getGroup() != null) {
-                    return ParamsMap.of("selectedGroup", getItem().getGroup());
-                }
-                return super.getLookupScreenParams();
-            }
-        };
-        action.setLookupScreenOpenType(OpenType.DIALOG);
-        pickerField.addAction(action);
+        pickerField.addAction(LookupAction.create(pickerField)
+                .withLookupScreenOpenType(OpenType.DIALOG)
+                .withLookupScreenParamsSupplier(() -> {
+                    if (getItem().getGroup() != null) {
+                        return ParamsMap.of("selectedGroup", getItem().getGroup());
+                    }
+                    return Collections.emptyMap();
+                }));
 
         groupFc.setComponent(pickerField);
     }

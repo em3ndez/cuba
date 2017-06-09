@@ -51,7 +51,7 @@ import java.util.function.Supplier;
  */
 @org.springframework.stereotype.Component("cuba_CreateAction")
 @Scope("prototype")
-public class CreateAction extends BaseAction implements Action.HasOpenType, Action.HasBeforeActionPerformedHandler  {
+public class CreateAction extends BaseAction<CreateAction> implements Action.HasOpenType, Action.HasBeforeActionPerformedHandler  {
 
     public static final String ACTION_ID = ListActionType.CREATE.getId();
 
@@ -401,6 +401,14 @@ public class CreateAction extends BaseAction implements Action.HasOpenType, Acti
     }
 
     /**
+     * @param windowParamsSupplier supplier that provides editor screen parameters
+     */
+    public CreateAction withWindowParamsSupplier(Supplier<Map<String, Object>> windowParamsSupplier) {
+        this.windowParamsSupplier = windowParamsSupplier;
+        return this;
+    }
+
+    /**
      * @return  map of initial values for attributes of created entity
      */
     public Map<String, Object> getInitialValues() {
@@ -426,6 +434,14 @@ public class CreateAction extends BaseAction implements Action.HasOpenType, Acti
      */
     public void setInitialValuesSupplier(Supplier<Map<String, Object>> initialValuesSupplier) {
         this.initialValuesSupplier = initialValuesSupplier;
+    }
+
+    /**
+     * @param initialValuesSupplier supplier that provides map of initial values for attributes of created entity
+     */
+    public CreateAction withInitialValuesSupplier(Supplier<Map<String, Object>> initialValuesSupplier) {
+        this.initialValuesSupplier = initialValuesSupplier;
+        return this;
     }
 
     /**

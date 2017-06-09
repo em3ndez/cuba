@@ -57,11 +57,14 @@ public abstract class AbstractAction implements Action {
 
     protected boolean primary = false;
 
-    protected AbstractAction(String id) {
-        this.id = id;
-
+    public AbstractAction() {
         UserSessionSource sessionSource = AppBeans.get(UserSessionSource.NAME);
         userSession = sessionSource.getUserSession();
+    }
+
+    protected AbstractAction(String id) {
+        this();
+        this.id = id;
     }
 
     protected AbstractAction(String id, @Nullable String shortcut) {

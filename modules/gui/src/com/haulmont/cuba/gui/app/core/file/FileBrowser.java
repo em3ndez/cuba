@@ -55,23 +55,23 @@ public class FileBrowser extends AbstractLookup {
             }
         });
 
-        multiUploadBtn.setAction(new BaseAction("multiupload") {
-            @Override
-            public void actionPerform(Component component) {
-                Window window = openWindow("multiuploadDialog", OpenType.DIALOG);
-                window.addCloseListener(actionId -> {
-                    if (COMMIT_ACTION_ID.equals(actionId)) {
-                        Collection<FileDescriptor> items = ((MultiUploader) window).getFiles();
-                        for (FileDescriptor fdesc : items) {
-                            boolean modified = filesDs.isModified();
-                            filesDs.addItem(fdesc);
-                            ((DatasourceImplementation) filesDs).setModified(modified);
-                        }
+        multiUploadBtn.setAction(
+                new BaseAction<>("multiupload")
+                        .withHandler(event -> {
+                            Window window = openWindow("multiuploadDialog", OpenType.DIALOG);
+                            window.addCloseListener(actionId -> {
+                                if (COMMIT_ACTION_ID.equals(actionId)) {
+                                    Collection<FileDescriptor> items = ((MultiUploader) window).getFiles();
+                                    for (FileDescriptor fdesc : items) {
+                                        boolean modified = filesDs.isModified();
+                                        filesDs.addItem(fdesc);
+                                        ((DatasourceImplementation) filesDs).setModified(modified);
+                                    }
 
-                        filesTable.requestFocus();
-                    }
-                });
-            }
-        });
+                                    filesTable.requestFocus();
+                                }
+                            });
+                        })
+        );
     }
 }

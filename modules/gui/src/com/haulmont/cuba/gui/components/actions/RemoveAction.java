@@ -51,7 +51,7 @@ import java.util.Set;
  */
 @org.springframework.stereotype.Component("cuba_RemoveAction")
 @Scope("prototype")
-public class RemoveAction extends ItemTrackingAction implements Action.HasBeforeActionPerformedHandler {
+public class RemoveAction extends ItemTrackingAction<RemoveAction> implements Action.HasBeforeActionPerformedHandler {
 
     public static final String ACTION_ID = ListActionType.REMOVE.getId();
 
