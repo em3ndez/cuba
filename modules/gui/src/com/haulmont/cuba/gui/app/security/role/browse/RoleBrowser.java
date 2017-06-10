@@ -103,56 +103,22 @@ public class RoleBrowser extends AbstractLookup {
 
         rolesTable.addAction(copyRoles);
 
-        ItemTrackingAction assignToUsersAction = new ItemTrackingAction("assignToUsers") {
-            @Override
-            public void actionPerform(Component component) {
-                if (target.getSelected().isEmpty()) {
-                    showNotification(getMessage("selectRole.msg"), NotificationType.HUMANIZED);
-                    return;
-                }
-
-                Role role = (Role) target.getSingleSelected();
-                Map<String, Object> params = new HashMap<>();
-                WindowParams.MULTI_SELECT.set(params, true);
-                openLookup("sec$User.lookup", items -> {
-                    if (items == null)
+        Action assignToUsersAction = new ItemTrackingAction(rolesTable, "assignToUsers")
+                .withCaption(getMessage("assignToUsers"))
+                .withHandler(event -> {
+                    Set<Role> selected = rolesTable.getSelected();
+                    if (selected.isEmpty()) {
+                        showNotification(getMessage("selectRole.msg"), NotificationType.HUMANIZED);
                         return;
-
-                    List<Entity> toCommit = new ArrayList<>();
-                    for (Object item : items) {
-                        User user = (User) item;
-                        LoadContext<UserRole> ctx = LoadContext.create(UserRole.class)
-                                .setView("user.edit")
-                                .setQuery(new LoadContext.Query("select ur from sec$UserRole ur where ur.user.id = :user")
-                                        .setParameter("user", user)
-                                );
-
-                        List<UserRole> userRoles = dataManager.loadList(ctx);
-
-                        boolean roleExist = false;
-                        for (UserRole userRole : userRoles) {
-                            if (role.equals(userRole.getRole())) {
-                                roleExist = true;
-                                break;
-                            }
-                        }
-                        if (!roleExist) {
-                            UserRole ur = metadata.create(UserRole.class);
-                            ur.setUser(user);
-                            ur.setRole(role);
-                            toCommit.add(ur);
-                        }
                     }
 
-                    if (!toCommit.isEmpty()) {
-                        dataManager.commit(new CommitContext(toCommit));
-                    }
-
-                    showNotification(getMessage("rolesAssigned.msg"));
-                }, OpenType.THIS_TAB, params);
-            }
-        };
-        assignToUsersAction.setCaption(getMessage("assignToUsers"));
+                    Role role = selected.iterator().next();
+                    Map<String, Object> userLookupParams = new HashMap<>();
+                    WindowParams.MULTI_SELECT.set(userLookupParams, true);
+                    openLookup(User.class, items -> {
+                        assignRoleUsers(role, items);
+                    }, OpenType.THIS_TAB, userLookupParams);
+                });
         rolesTable.addAction(assignToUsersAction);
 
         boolean hasPermissionsToCreateUserRole = security.isEntityOpPermitted(UserRole.class, EntityOp.CREATE);
@@ -178,41 +144,81 @@ public class RoleBrowser extends AbstractLookup {
         });
 
         importRolesUpload.addFileUploadSucceedListener(event -> {
-            File file = fileUploadingAPI.getFile(importRolesUpload.getFileId());
-            if (file == null) {
-                String errorMsg = String.format("Entities import upload error. File with id %s not found", importRolesUpload.getFileId());
-                throw new RuntimeException(errorMsg);
-            }
-
-            byte[] fileBytes;
-            try (InputStream is = new FileInputStream(file)) {
-                fileBytes = IOUtils.toByteArray(is);
-            } catch (IOException e) {
-                throw new RuntimeException("Unable to import file", e);
-            }
-
-            try {
-                Collection<Entity> importedEntities;
-                if ("json".equals(Files.getFileExtension(importRolesUpload.getFileName()))) {
-                    importedEntities = entityImportExportService.importEntitiesFromJSON(new String(fileBytes), createRolesImportView());
-                } else {
-                    importedEntities = entityImportExportService.importEntitiesFromZIP(fileBytes, createRolesImportView());
-                }
-                long importedRolesCount = importedEntities.stream().filter(entity -> entity instanceof Role).count();
-                showNotification(importedRolesCount + " roles imported", NotificationType.HUMANIZED);
-                rolesDs.refresh();
-            } catch (Exception e) {
-                showNotification(formatMessage("importError", e.getMessage()), NotificationType.ERROR);
-            }
-
-            try {
-                fileUploadingAPI.deleteFile(importRolesUpload.getFileId());
-            } catch (FileStorageException e) {
-                log.error("Unable to delete temp file", e);
-            }
+            importRoles();
         });
         importRolesUpload.setCaption(null);
         importRolesUpload.setUploadButtonCaption(null);
+    }
+
+    protected void importRoles() {
+        File file = fileUploadingAPI.getFile(importRolesUpload.getFileId());
+        if (file == null) {
+            String errorMsg = String.format("Entities import upload error. File with id %s not found", importRolesUpload.getFileId());
+            throw new RuntimeException(errorMsg);
+        }
+
+        byte[] fileBytes;
+        try (InputStream is = new FileInputStream(file)) {
+            fileBytes = IOUtils.toByteArray(is);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to import file", e);
+        }
+
+        try {
+            Collection<Entity> importedEntities;
+            if ("json".equals(Files.getFileExtension(importRolesUpload.getFileName()))) {
+                importedEntities = entityImportExportService.importEntitiesFromJSON(new String(fileBytes), createRolesImportView());
+            } else {
+                importedEntities = entityImportExportService.importEntitiesFromZIP(fileBytes, createRolesImportView());
+            }
+            long importedRolesCount = importedEntities.stream().filter(entity -> entity instanceof Role).count();
+            showNotification(importedRolesCount + " roles imported", NotificationType.HUMANIZED);
+            rolesDs.refresh();
+        } catch (Exception e) {
+            showNotification(formatMessage("importError", e.getMessage()), NotificationType.ERROR);
+        }
+
+        try {
+            fileUploadingAPI.deleteFile(importRolesUpload.getFileId());
+        } catch (FileStorageException e) {
+            log.error("Unable to delete temp file", e);
+        }
+    }
+
+    protected void assignRoleUsers(Role role, Collection<User> items) {
+        if (items == null)
+            return;
+
+        List<Entity> toCommit = new ArrayList<>();
+        for (User user : items) {
+            LoadContext<UserRole> ctx = LoadContext.create(UserRole.class)
+                    .setView("user.edit")
+                    .setQuery(new LoadContext.Query("select ur from sec$UserRole ur where ur.user.id = :user")
+                            .setParameter("user", user)
+                    );
+
+            List<UserRole> userRoles = dataManager.loadList(ctx);
+
+            boolean roleExist = false;
+            for (UserRole userRole : userRoles) {
+                if (role.equals(userRole.getRole())) {
+                    roleExist = true;
+                    break;
+                }
+            }
+            if (!roleExist) {
+                UserRole ur = metadata.create(UserRole.class);
+                ur.setUser(user);
+                ur.setRole(role);
+                toCommit.add(ur);
+            }
+        }
+
+        if (!toCommit.isEmpty()) {
+            dataManager.commit(new CommitContext(toCommit));
+        }
+
+        showNotification(getMessage("rolesAssigned.msg"));
     }
 
     protected EntityImportView createRolesImportView() {
@@ -222,7 +228,6 @@ public class RoleBrowser extends AbstractLookup {
                         new EntityImportView(Permission.class).addLocalProperties(),
                         CollectionImportPolicy.REMOVE_ABSENT_ITEMS);
     }
-
 
     public void exportZIP() {
         export(ExportFormat.ZIP);

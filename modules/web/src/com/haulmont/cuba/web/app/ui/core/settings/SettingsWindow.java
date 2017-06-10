@@ -149,7 +149,7 @@ public class SettingsWindow extends AbstractWindow {
         appLangField.setOptionsMap(options);
         appLangField.setValue(userManagementService.loadOwnLocale());
 
-        Action commitAction = new BaseAction<>("commit")
+        Action commitAction = new BaseAction("commit")
                 .withShortcut(clientConfig.getCommitShortcut())
                 .withHandler(event ->
                         commit()
@@ -157,7 +157,7 @@ public class SettingsWindow extends AbstractWindow {
         addAction(commitAction);
         okBtn.setAction(commitAction);
 
-        cancelBtn.setAction(new BaseAction<>("cancel")
+        cancelBtn.setAction(new BaseAction("cancel")
                 .withHandler(event ->
                         cancel()
                 ));

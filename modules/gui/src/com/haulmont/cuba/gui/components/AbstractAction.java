@@ -57,13 +57,9 @@ public abstract class AbstractAction implements Action {
 
     protected boolean primary = false;
 
-    public AbstractAction() {
+    protected AbstractAction(String id) {
         UserSessionSource sessionSource = AppBeans.get(UserSessionSource.NAME);
         userSession = sessionSource.getUserSession();
-    }
-
-    protected AbstractAction(String id) {
-        this();
         this.id = id;
     }
 
@@ -87,7 +83,11 @@ public abstract class AbstractAction implements Action {
 
     @Override
     public String getCaption() {
-        return caption == null ? messages.getMessage(getClass(), id) : caption;
+        return caption == null ? getDefaultCaption() : caption;
+    }
+
+    protected String getDefaultCaption() {
+        return messages.getMessage(getClass(), id);
     }
 
     @Override

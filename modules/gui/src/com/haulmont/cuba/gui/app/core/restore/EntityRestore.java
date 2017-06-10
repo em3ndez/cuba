@@ -232,25 +232,19 @@ public class EntityRestore extends AbstractWindow {
                         getMessage("dialogs.Message"),
                         MessageType.CONFIRMATION,
                         new Action[]{
-                                new DialogAction(Type.OK) {
-                                    @Override
-                                    public void actionPerform(Component component) {
-                                        restoreService.restoreEntities(entityList);
-                                        entitiesTable.refresh();
-                                        entitiesTable.requestFocus();
-                                    }
-                                },
-                                new DialogAction(Type.CANCEL, Status.PRIMARY) {
-                                    @Override
-                                    public void actionPerform(Component component) {
-                                        entitiesTable.requestFocus();
-                                    }
-                                }
+                                new DialogAction(Type.OK).withHandler(event -> {
+                                    restoreService.restoreEntities(entityList);
+                                    entitiesTable.refresh();
+                                    entitiesTable.requestFocus();
+                                }),
+                                new DialogAction(Type.CANCEL, Status.PRIMARY).withHandler(event -> {
+                                    entitiesTable.requestFocus();
+                                })
                         }
                 );
             }
         } else {
-            showNotification(getMessage("entityRestore.restoreMsg"), NotificationType.HUMANIZED);
+            showNotification(getMessage("entityRestore.restoreMsg"));
         }
     }
 

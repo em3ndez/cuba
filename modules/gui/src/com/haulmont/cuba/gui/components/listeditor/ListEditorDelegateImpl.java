@@ -278,8 +278,7 @@ public class ListEditorDelegateImpl implements ListEditorDelegate {
         clearBtn.setIcon("components/pickerfield/images/clear-btn.png");
         clearBtn.setStyleName("c-listeditor-button");
         clearBtn.setCaption("");
-        clearBtn.setAction(
-                new BaseAction<>("clear")
+        clearBtn.setAction(new BaseAction("clear")
                         .withCaption("Clear")
                         .withHandler(event ->
                                 actualField.setValue(null)

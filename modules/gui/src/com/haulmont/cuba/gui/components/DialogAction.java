@@ -17,9 +17,13 @@
 package com.haulmont.cuba.gui.components;
 
 import com.haulmont.cuba.core.global.AppBeans;
+import com.haulmont.cuba.gui.components.actions.BaseAction;
 import com.haulmont.cuba.gui.theme.ThemeConstantsManager;
 
-public class DialogAction extends AbstractAction {
+/**
+ * todo JavaDoc with fluent API example
+ */
+public class DialogAction extends BaseAction {
 
     public enum Type {
         OK("ok", "actions.Ok", "actions.dialog.Ok.icon"),
@@ -56,6 +60,7 @@ public class DialogAction extends AbstractAction {
     public DialogAction(Type type) {
         super(type.id);
         this.type = type;
+        this.caption = messages.getMainMessage(type.msgKey);
 
         ThemeConstantsManager thCM = AppBeans.get(ThemeConstantsManager.NAME);
         this.icon = thCM.getThemeValue(type.iconKey);
@@ -71,16 +76,7 @@ public class DialogAction extends AbstractAction {
         this.primary = status == Status.PRIMARY;
     }
 
-    @Override
-    public String getCaption() {
-        return messages.getMainMessage(type.msgKey);
-    }
-
     public Type getType() {
         return type;
-    }
-
-    @Override
-    public void actionPerform(Component component) {
     }
 }

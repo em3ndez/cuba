@@ -158,7 +158,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
         public abstract Action createAction(PickerField pickerField);
     }
 
-    abstract class StandardAction<T extends StandardAction> extends BaseAction<T> {
+    abstract class StandardAction extends BaseAction {
 
         protected PickerField pickerField;
 
@@ -204,7 +204,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
      */
     @org.springframework.stereotype.Component("cuba_LookupAction")
     @Scope("prototype")
-    class LookupAction extends StandardAction<LookupAction> {
+    class LookupAction extends StandardAction {
 
         public static final String NAME = ActionType.LOOKUP.getId();
 
@@ -264,11 +264,6 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
          */
         public void setLookupScreenOpenType(OpenType lookupScreenOpenType) {
             this.lookupScreenOpenType = lookupScreenOpenType;
-        }
-
-        public LookupAction withLookupScreenOpenType(OpenType lookupScreenOpenType) {
-            this.lookupScreenOpenType = lookupScreenOpenType;
-            return this;
         }
 
         @Deprecated
@@ -462,11 +457,6 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
         public void setLookupScreenParamsSupplier(Supplier<Map<String, Object>> supplier) {
             this.lookupScreenParamsSupplier = supplier;
         }
-
-        public LookupAction withLookupScreenParamsSupplier(Supplier<Map<String, Object>> supplier) {
-            this.lookupScreenParamsSupplier = supplier;
-            return this;
-        }
     }
 
     /**
@@ -481,7 +471,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
      */
     @org.springframework.stereotype.Component("cuba_ClearAction")
     @Scope("prototype")
-    class ClearAction extends StandardAction<ClearAction> {
+    class ClearAction extends StandardAction {
 
         public static final String NAME = ActionType.CLEAR.getId();
 
@@ -549,7 +539,7 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
      */
     @org.springframework.stereotype.Component("cuba_OpenAction")
     @Scope("prototype")
-    class OpenAction extends StandardAction<OpenAction> {
+    class OpenAction extends StandardAction {
 
         public static final String NAME = ActionType.OPEN.getId();
 
@@ -637,11 +627,6 @@ public interface PickerField extends Field, Component.ActionsHolder, Component.B
 
         public void setEditScreenParamsSupplier(Supplier<Map<String, Object>> editScreenParamsSupplier) {
             this.editScreenParamsSupplier = editScreenParamsSupplier;
-        }
-
-        public OpenAction withEditScreenParamsSupplier(Supplier<Map<String, Object>> editScreenParamsSupplier) {
-            this.editScreenParamsSupplier = editScreenParamsSupplier;
-            return this;
         }
 
         @Override

@@ -2234,19 +2234,13 @@ public class FilterDelegateImpl implements FilterDelegate {
                     getMainMessage("filter.removeDialogMessage"),
                     Frame.MessageType.CONFIRMATION,
                     new Action[]{
-                            new DialogAction(Type.YES) {
-                                @Override
-                                public void actionPerform(Component component) {
-                                    removeFilterEntity();
-                                    settingsBtn.requestFocus();
-                                }
-                            },
-                            new DialogAction(Type.NO, Status.PRIMARY) {
-                                @Override
-                                public void actionPerform(Component component) {
-                                    settingsBtn.requestFocus();
-                                }
-                            }
+                            new DialogAction(Type.YES).withHandler(event -> {
+                                removeFilterEntity();
+                                settingsBtn.requestFocus();
+                            }),
+                            new DialogAction(Type.NO, Status.PRIMARY).withHandler(event -> {
+                                settingsBtn.requestFocus();
+                            })
                     });
         }
 

@@ -43,7 +43,7 @@ import java.util.function.Consumer;
  * <p> Descendants may override {@link #isPermitted()} and {@link #isApplicable()} methods to define conditions in which
  * action will be enabled.
  */
-public class BaseAction<T extends BaseAction> extends AbstractAction implements Action.HasTarget, Action.UiPermissionAware {
+public class BaseAction extends AbstractAction implements Action.HasTarget, Action.UiPermissionAware {
 
     private boolean enabledByUiPermissions = true;
     private boolean visibleByUiPermissions = true;
@@ -61,12 +61,13 @@ public class BaseAction<T extends BaseAction> extends AbstractAction implements 
         this(id, null);
     }
 
-    public BaseAction(String id, @Nullable String shortcut) {
+    protected BaseAction(String id, @Nullable String shortcut) {
         super(id, shortcut);
     }
 
     /**
      * Callback method which is invoked by the action to determine its enabled state.
+     *
      * @return true if the action is enabled for the current user
      */
     protected boolean isPermitted() {
@@ -75,6 +76,7 @@ public class BaseAction<T extends BaseAction> extends AbstractAction implements 
 
     /**
      * Callback method which is invoked by the action to determine its enabled state.
+     *
      * @return true if the action is enabled for the current context, e.g. there is a selected row in a table
      */
     protected boolean isApplicable() {
@@ -216,37 +218,60 @@ public class BaseAction<T extends BaseAction> extends AbstractAction implements 
         }
     }
 
-    // todo JavaDoc!
-
-    @SuppressWarnings("unchecked")
-    public T withCaption(String caption) {
+    /**
+     * Set caption usin fluent API method.
+     *
+     * @param caption caption
+     * @return current instance of action
+     */
+    public BaseAction withCaption(String caption) {
         this.caption = caption;
-        return (T) this;
+        return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public T withDescription(String description) {
+    /**
+     * Set description using fluent API method.
+     *
+     * @param description description
+     * @return current instance of action
+     */
+    public BaseAction withDescription(String description) {
         this.description = description;
-        return (T) this;
+        return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public T withIcon(String icon) {
+    /**
+     * Set icon using fluent API method.
+     *
+     * @param icon icon
+     * @return current instance of action
+     */
+    public BaseAction withIcon(String icon) {
         this.icon = icon;
-        return (T) this;
+        return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public T withShortcut(String shortcut) {
+    /**
+     * Set shortcut using fluent API method.
+     *
+     * @param shortcut shortcut
+     * @return current instance of action
+     */
+    public BaseAction withShortcut(String shortcut) {
         if (shortcut != null) {
             this.shortcut = KeyCombination.create(shortcut);
         }
-        return (T) this;
+        return this;
     }
 
-    @SuppressWarnings("unchecked")
-    public T withHandler(Consumer<ActionPerformedEvent> handler) {
+    /**
+     * Set actionPerformed handler using fluent API method. Can be used instead of subclassing BaseAction class.
+     *
+     * @param handler action performed handler
+     * @return current instance of action
+     */
+    public BaseAction withHandler(Consumer<ActionPerformedEvent> handler) {
         this.actionPerformHandler = handler;
-        return (T) this;
+        return this;
     }
 }

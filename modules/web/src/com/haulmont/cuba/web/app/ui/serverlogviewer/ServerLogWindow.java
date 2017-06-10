@@ -28,6 +28,7 @@ import com.haulmont.cuba.core.sys.logging.LoggingHelper;
 import com.haulmont.cuba.gui.AppConfig;
 import com.haulmont.cuba.gui.WindowManager.OpenType;
 import com.haulmont.cuba.gui.components.*;
+import com.haulmont.cuba.gui.components.PickerField.LookupAction;
 import com.haulmont.cuba.gui.components.Timer;
 import com.haulmont.cuba.gui.components.actions.BaseAction;
 import com.haulmont.cuba.gui.data.CollectionDatasource;
@@ -145,14 +146,13 @@ public class ServerLogWindow extends AbstractWindow {
 
         jmxConnectionField.removeAllActions();
 
-        jmxConnectionField.addAction(new PickerField.LookupAction(jmxConnectionField) {
-            @Override
-            public void afterCloseLookup(String actionId) {
-                jmxInstancesDs.refresh();
-            }
+        LookupAction action = LookupAction.create(jmxConnectionField);
+        action.setAfterLookupCloseHandler((window, actionId) -> {
+            jmxInstancesDs.refresh();
         });
+        jmxConnectionField.addAction(action);
 
-        jmxConnectionField.addAction(new BaseAction<>("actions.Add")
+        jmxConnectionField.addAction(new BaseAction("actions.Add")
                 .withIcon("icons/plus-btn.png")
                 .withHandler(event -> {
                     JmxInstanceEditor instanceEditor = (JmxInstanceEditor) openEditor(

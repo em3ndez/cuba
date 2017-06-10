@@ -119,12 +119,10 @@ public class GroupBrowser extends AbstractWindow {
 
     @Override
     public void init(final Map<String, Object> params) {
-        CreateAction createAction = new CreateAction(groupsTree) {
-            @Override
-            protected void afterCommit(Entity entity) {
-                groupsTree.expandTree();
-            }
-        };
+        CreateAction createAction = new CreateAction(groupsTree);
+        createAction.setAfterCommitHandler(entity -> {
+            groupsTree.expandTree();
+        });
         groupsTree.addAction(createAction);
         createAction.setCaption(getMessage("action.create"));
 
@@ -140,12 +138,10 @@ public class GroupBrowser extends AbstractWindow {
         groupCreateButton.addAction(createAction);
         groupCreateButton.addAction(groupCopyAction);
 
-        userCreateAction = new GroupPropertyCreateAction(usersTable) {
-            @Override
-            protected void afterCommit(Entity entity) {
-                usersTable.getDatasource().refresh();
-            }
-        };
+        userCreateAction = new GroupPropertyCreateAction(usersTable);
+        userCreateAction.setAfterCommitHandler(entity -> {
+            usersTable.getDatasource().refresh();
+        });
 
         groupsTree.addAction(new RemoveAction(groupsTree) {
             @Override
@@ -303,21 +299,20 @@ public class GroupBrowser extends AbstractWindow {
             return;
         }
 
+        @SuppressWarnings("unchecked")
         Table<Constraint> constraintsTable = (Table) getComponentNN("constraintsTable");
         constraintCreateAction = new GroupPropertyCreateAction(constraintsTable);
         constraintsTable.addAction(constraintCreateAction);
 
-        ItemTrackingAction activateAction = new ItemTrackingAction("activate") {
-            @Override
-            public void actionPerform(Component component) {
-                Constraint constraint = (Constraint) constraintsTable.getSingleSelected();
-                if (constraint != null) {
-                    constraint.setIsActive(!Boolean.TRUE.equals(constraint.getIsActive()));
-                    constraintsDs.commit();
-                    constraintsDs.refresh();
-                }
-            }
-        };
+        Action activateAction = new ItemTrackingAction("activate")
+                .withHandler(event -> {
+                    Constraint constraint = constraintsTable.getSingleSelected();
+                    if (constraint != null) {
+                        constraint.setIsActive(!Boolean.TRUE.equals(constraint.getIsActive()));
+                        constraintsDs.commit();
+                        constraintsDs.refresh();
+                    }
+                });
         constraintsTable.addAction(activateAction);
 
         constraintsDs.addItemChangeListener(e -> {

@@ -128,7 +128,7 @@ public class MbeansDisplayWindow extends AbstractWindow {
             }
         });
 
-        jmxConnectionField.addAction(new BaseAction<>("actions.Add")
+        jmxConnectionField.addAction(new BaseAction("actions.Add")
                 .withIcon("icons/plus-btn.png")
                 .withHandler(event -> {
                     JmxInstanceEditor instanceEditor = (JmxInstanceEditor) openEditor(
